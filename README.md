@@ -12,5 +12,5 @@
 
 ## Text file 
 
-The .pdf file contains some details about the previous test cases and essentially the schemes used to solve the Heat equation for each test case and the corresponding numerical results.
+The `test_cases.pdf` file contains some details about the previous test cases and essentially the schemes used to solve the Heat equation for each test case and the corresponding numerical results.
 
