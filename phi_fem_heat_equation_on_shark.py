@@ -213,7 +213,7 @@ for i in range(init_Iter, Iter):
             if phi(v1x, v1y) <= 0.0 or phi(v2x, v2y) <=0.0 or phi(v3x, v3y) <= 0.0:
                 domains[ind] = 1
         mesh = df.SubMesh(mesh_macro, domains, 1)
-        V_phi = df.FunctionSpace(mesh, "CG", degV)
+        V_phi = df.FunctionSpace(mesh, "CG", degPhi)
         print(
             "###########################\n"
             f"Mesh built using the following parameters : \n    Size of cell on the initial domain :{init_mesh.hmax()}\n"
