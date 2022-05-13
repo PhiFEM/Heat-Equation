@@ -227,8 +227,6 @@ for i in range(init_Iter, Iter):
     elif dom == "circle":
         N = int(10 * 2 ** ((i)))
         mesh_macro = df.UnitSquareMesh(N, N)
-        dt = mesh_macro.hmax()  # 10.0 * (mesh_macro.hmax() ** 2)
-        Time = np.arange(0, T + dt, dt)
         V_phi = df.FunctionSpace(mesh_macro, "CG", degPhi)
         phi = df.Expression(
             "-0.125+pow(x[0]-0.5,2)+pow(x[1]-0.5,2)", degree=degPhi, domain=mesh_macro,
