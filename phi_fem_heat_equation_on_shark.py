@@ -214,6 +214,8 @@ for i in range(init_Iter, Iter):
                 domains[ind] = 1
         mesh = df.SubMesh(mesh_macro, domains, 1)
         V_phi = df.FunctionSpace(mesh, "CG", degPhi)
+        phi = phi_expr(element = V_phi.ufl_element())
+        phi = df.interpolate(phi, V_phi)
         print(
             "###########################\n"
             f"Mesh built using the following parameters : \n    Size of cell on the initial domain :{init_mesh.hmax()}\n"
@@ -248,8 +250,6 @@ for i in range(init_Iter, Iter):
             "-0.125+pow(x[0]-0.5,2)+pow(x[1]-0.5,2)", degree=degPhi, domain=mesh
         )
         phi = df.interpolate(phi, V_phi)
-
-    phi = df.interpolate(phi, V_phi)
 
     dt = mesh.hmax()  # 10.0 * (mesh_macro.hmax() ** 2)
     Time = np.arange(0, T + dt, dt)
