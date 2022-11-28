@@ -14,5 +14,30 @@
     - `degree_phi.py` : code to solve the heaat equation on a rounded cross with $\phi$-FEM, for different degrees of interpolation of the level-set function $\phi$.
 
 Required packages : *FEniCS*, *matplotlib*, *numpy*, *sympy* and *vedo*. 
+You can run \[[FEniCS](https://fenicsproject.org/)] these codes using the Docker image by using the commands 
+
+```bash
+curl -s https://get.fenicsproject.org | bash
+fenicsproject run
+```
+
+or by installing (on ubuntu) with 
+
+```bash
+sudo apt-get install software-properties-common
+sudo add-apt-repository ppa:fenics-packages/fenics
+sudo apt-get update
+sudo apt-get install fenics
+```
+
+Then, just install the other packages with 
+```bash
+pip install matplotlib 
+pip install numpy 
+pip install sympy 
+pip install vedo
+
+```
+
 
 Authors : Michel Duprez, Vanessa Lleras, Alexei Lozinski and Killian Vuillemot. 
