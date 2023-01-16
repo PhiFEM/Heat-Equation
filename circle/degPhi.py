@@ -21,37 +21,39 @@ test_case = 2
 
 if test_case == 1:
     # expected slope 1
-    # puissance on dt
+    # power on dt
     exp_dt = 1.0
     # Number of iterations
     Iter = 5
     degV = 1
 elif test_case == 2:
     # expected slope 2
-    # puissance on dt
+    # power on dt
     exp_dt = 2.0
     # Number of iterations
     Iter = 5
     degV = 1
 elif test_case == 3:
     # expected slope 2
-    # puissance on dt
+    # power on dt
     exp_dt = 2.0
     # Number of iterations
     Iter = 5
     degV = 2
 elif test_case == 4:
     # expected slope 3
-    # puissance on dt
+    # power on dt
     exp_dt = 3.0
     # Number of iterations
-    Iter = 5
+    Iter = 4
     degV = 2
+
+plt.figure()
 
 # Final time of the simulation
 T = 1.0
-# Polynome Pk
-degPhi = degV + 1
+# parameter of the ghost penalty
+sigma = 1.0
 # Ghost penalty
 ghost = True
 # compare the computation times or not
@@ -74,12 +76,11 @@ def output_latex(f, A, B):
 
 if not os.path.exists("./outputs"):
     os.makedirs("./outputs")
-
+    
 f = open(
-    f"./outputs/output_euler_homo_circle_manufactured_sigma_l_{degPhi}_T_{T}_dt_{int(exp_dt)}_h_P{degV}.txt",
+    f"./outputs/output_euler_homo_circle_manufactured_degPhi_T_{T}_dt_{int(exp_dt)}_h_P{degV}_sigma_{sigma}.txt",
     "w",
 )
-
 # Computation of the exact solution and exact source term
 t, x, y = sympy.symbols("tt xx yy")
 u1 = sympy.cos(sympy.pi / 2.0 * (x**2 + y**2)) * sympy.sin(t) * sympy.exp(x)
@@ -89,27 +90,30 @@ f1 = (
     - sympy.diff(sympy.diff(u1, y), y)
 )
 
-plt.figure()
-for i in range(0, Iter):
-    Sigma = [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 20.0, 100.0, 1000.0, 10000.0]
+#######################################
+#              Phi-FEM                #
+#######################################
 
+for k in range(0, 4):
+    degPhi = degV + k
     # Initialistion of the output
-    size_mesh_phi_fem_vec = np.zeros(len(Sigma))
-    error_L2_phi_fem_vec = np.zeros(len(Sigma))
-    error_H1_phi_fem_vec = np.zeros(len(Sigma))
-    cond_phi_fem_vec = np.zeros(len(Sigma))
-    size_matrices_phi_fem = np.zeros(len(Sigma))
+    size_mesh_phi_fem_vec = np.zeros(Iter)
+    error_L2_phi_fem_vec = np.zeros(Iter)
+    error_H1_phi_fem_vec = np.zeros(Iter)
+    cond_phi_fem_vec = np.zeros(Iter)
+    size_matrices_phi_fem = np.zeros(Iter)
     if compute_times:
-        computation_time_phi_fem = np.zeros(len(Sigma))
-        assembly_time_phi_fem = np.zeros(len(Sigma))
-        solve_time_phi_fem = np.zeros(len(Sigma))
+        computation_time_phi_fem = np.zeros(Iter)
+        assembly_time_phi_fem = np.zeros(Iter)
+        solve_time_phi_fem = np.zeros(Iter)
 
-    for k in range(len(Sigma)):
-        sigma = Sigma[k]
-        print("#############################################")
-        text = " Iteration phi FEM " + str(i + 1) + " sigma = " + str(sigma) + " "
-        print(f"{text:#^45}")
-        print("#############################################")
+    for i in range(0, Iter):
+        print("###########################")
+        text = " Iteration phi FEM " + str(i + 1) + " "
+        print(f"{text:#^27}")
+        text = " l = " + str(degPhi) + " "
+        print(f"{text:#^27}")
+        print("###########################")
 
         # Construction of the mesh
         N = int(8 * 2 ** ((i)))
@@ -269,9 +273,9 @@ for i in range(0, Iter):
             err_H1 += df.assemble(dt * df.grad(sol[j] - u_expr[j]) ** 2 * dx)
         err_L2 = err_L2**0.5 / norm_L2_exact**0.5
         err_H1 = err_H1**0.5 / norm_H1_exact**0.5
-        error_L2_phi_fem_vec[k] = err_L2
-        error_H1_phi_fem_vec[k] = err_H1
-        size_mesh_phi_fem_vec[k] = mesh.hmax()
+        error_L2_phi_fem_vec[i] = err_L2
+        error_H1_phi_fem_vec[i] = err_H1
+        size_mesh_phi_fem_vec[i] = mesh.hmax()
         print("h :", mesh.hmax())
         print("relative L2 error : ", err_L2)
         print("relative H1 error : ", err_H1)
@@ -280,27 +284,29 @@ for i in range(0, Iter):
             ev, eV = np.linalg.eig(A)
             ev = abs(ev)
             cond = np.max(ev) / np.min(ev)
-            cond_phi_fem_vec[k] = cond
+            cond_phi_fem_vec[i] = cond
             print("conditioning number x h^2", cond)
         print("")
 
     if write_output:
-        f.write("h : " + str(mesh.hmax()) + "\n")
+        f.write(f"{degPhi = } \n")
         f.write("relative L2 norm phi fem : \n")
-        output_latex(f, Sigma, error_L2_phi_fem_vec)
+        output_latex(f, size_mesh_phi_fem_vec, error_L2_phi_fem_vec)
         f.write("relative H1 norm phi fem : \n")
-        output_latex(f, Sigma, error_H1_phi_fem_vec)
-    plt.loglog(Sigma, error_H1_phi_fem_vec, label="h=" + str(mesh.hmax()))
+        output_latex(f, size_mesh_phi_fem_vec, error_H1_phi_fem_vec)
 
+    plt.loglog(size_mesh_phi_fem_vec, error_H1_phi_fem_vec, label="l = " + str(degPhi))
 plt.legend()
 plt.xlabel("h")
-if test_case == 1 or test_case == 3:
+if test_case == 1 or test_case == 3 : 
     plt.ylabel("l2(H1) error")
-elif test_case == 2 or test_case == 4:
+elif test_case == 2 or test_case == 4 : 
     plt.ylabel("linf(L2) error")
 
 plt.tight_layout()
-plt.savefig(f"./outputs/plot_problem_euler_test_case_{test_case}_sigma.png")
+plt.savefig(
+    f"./outputs/plot_problem_euler_test_case_{test_case}_sigma_{sigma}_degPhi.png"
+)
 plt.show()
 
 if write_output:
