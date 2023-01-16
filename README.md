@@ -30,10 +30,7 @@ sudo apt-get install fenics
 
 Then, just install the other packages (and dependencies) with 
 ```bash
-pip install matplotlib 
-pip install numpy 
-pip install sympy 
-pip install vedo
+pip install matplotlib numpy sympy vedo
 sudo apt install libcgal-dev libeigen3-dev
 pip install pygalmesh
 ```
