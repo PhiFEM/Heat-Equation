@@ -58,8 +58,7 @@ ghost = True
 compute_times = True
 # save results
 write_output = True
-# Compute the conditioning number
-conditioning = False
+
 
 # Function used to write in the outputs files
 def output_latex(f, A, B):
@@ -82,7 +81,9 @@ f = open(
 
 # Computation of the exact solution and exact source term
 t, x, y = sympy.symbols("tt xx yy")
-u1 = sympy.cos(sympy.pi / 2.0 * (x**2 + y**2)) * sympy.sin(t) * sympy.exp(x)
+u1 = (
+    sympy.cos(sympy.pi / 2.0 * (x**2 + y**2)) * sympy.sin(t) * sympy.exp(x)
+)
 f1 = (
     sympy.diff(u1, t)
     - sympy.diff(sympy.diff(u1, x), x)
@@ -97,7 +98,6 @@ for i in range(0, Iter):
     size_mesh_phi_fem_vec = np.zeros(len(Sigma))
     error_L2_phi_fem_vec = np.zeros(len(Sigma))
     error_H1_phi_fem_vec = np.zeros(len(Sigma))
-    cond_phi_fem_vec = np.zeros(len(Sigma))
     size_matrices_phi_fem = np.zeros(len(Sigma))
     if compute_times:
         computation_time_phi_fem = np.zeros(len(Sigma))
@@ -107,21 +107,29 @@ for i in range(0, Iter):
     for k in range(len(Sigma)):
         sigma = Sigma[k]
         print("#############################################")
-        text = " Iteration phi FEM " + str(i + 1) + " sigma = " + str(sigma) + " "
+        text = (
+            " Iteration phi FEM " + str(i + 1) + " sigma = " + str(sigma) + " "
+        )
         print(f"{text:#^45}")
         print("#############################################")
 
         # Construction of the mesh
         N = int(8 * 2 ** ((i)))
-        mesh_macro = df.RectangleMesh(df.Point(-1.5, -1.5), df.Point(1.5, 1.5), N, N)
+        mesh_macro = df.RectangleMesh(
+            df.Point(-1.5, -1.5), df.Point(1.5, 1.5), N, N
+        )
         dt = mesh_macro.hmax() ** exp_dt
         Time = np.arange(0, T, dt)
         V_phi = df.FunctionSpace(mesh_macro, "CG", degPhi)
         phi = df.Expression(
-            "-(1.) + ((x[0])*(x[0]) + (x[1])*(x[1]))", degree=degPhi, domain=mesh_macro
+            "-(1.) + ((x[0])*(x[0]) + (x[1])*(x[1]))",
+            degree=degPhi,
+            domain=mesh_macro,
         )
         phi = df.interpolate(phi, V_phi)
-        domains = df.MeshFunction("size_t", mesh_macro, mesh_macro.topology().dim())
+        domains = df.MeshFunction(
+            "size_t", mesh_macro, mesh_macro.topology().dim()
+        )
         domains.set_all(0)
         for ind in range(mesh_macro.num_cells()):
             mycell = df.Cell(mesh_macro, ind)
@@ -134,13 +142,17 @@ for i in range(0, Iter):
         # Construction of phi
         V_phi = df.FunctionSpace(mesh, "CG", degPhi)
         phi = df.Expression(
-            "-(1.) + ((x[0])*(x[0]) + (x[1])*(x[1]))", degree=degPhi, domain=mesh
+            "-(1.) + ((x[0])*(x[0]) + (x[1])*(x[1]))",
+            degree=degPhi,
+            domain=mesh,
         )
         phi = df.interpolate(phi, V_phi)
 
         # Facets and cells where we apply the ghost penalty
         mesh.init(1, 2)
-        facet_ghost = df.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+        facet_ghost = df.MeshFunction(
+            "size_t", mesh, mesh.topology().dim() - 1
+        )
         cell_ghost = df.MeshFunction("size_t", mesh, mesh.topology().dim())
         facet_ghost.set_all(0)
         cell_ghost.set_all(0)
@@ -216,7 +228,10 @@ for i in range(0, Iter):
             ) * dx(1)
 
         for ind in range(1, len(Time)):
-            L = f_expr[ind] * phi * v * dx + dt ** (-1) * phi * wn * phi * v * dx
+            L = (
+                f_expr[ind] * phi * v * dx
+                + dt ** (-1) * phi * wn * phi * v * dx
+            )
             if ghost == True:
                 L += (
                     -sigma
@@ -275,13 +290,6 @@ for i in range(0, Iter):
         print("h :", mesh.hmax())
         print("relative L2 error : ", err_L2)
         print("relative H1 error : ", err_H1)
-        if conditioning == True:
-            A = np.matrix(df.assemble(a).array())
-            ev, eV = np.linalg.eig(A)
-            ev = abs(ev)
-            cond = np.max(ev) / np.min(ev)
-            cond_phi_fem_vec[k] = cond
-            print("conditioning number x h^2", cond)
         print("")
 
     if write_output:

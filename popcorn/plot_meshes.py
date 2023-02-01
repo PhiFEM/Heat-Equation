@@ -32,8 +32,16 @@ for name in filenames:
                 phi = (xx**2 + yy**2 + zz**2) - r0**2
                 for k in range(0, 12):
                     if k >= 0 and k <= 4:
-                        xk = (r0 / np.sqrt(5)) * 2.0 * np.cos(2.0 * k * np.pi / 5.0)
-                        yk = (r0 / np.sqrt(5)) * 2.0 * np.sin(2.0 * k * np.pi / 5.0)
+                        xk = (
+                            (r0 / np.sqrt(5))
+                            * 2.0
+                            * np.cos(2.0 * k * np.pi / 5.0)
+                        )
+                        yk = (
+                            (r0 / np.sqrt(5))
+                            * 2.0
+                            * np.sin(2.0 * k * np.pi / 5.0)
+                        )
                         zk = r0 / np.sqrt(5)
                     elif k >= 5 and k <= 9:
                         xk = (
@@ -56,7 +64,8 @@ for name in filenames:
                         yk = 0.0
                         zk = -r0
                     phi -= A * np.exp(
-                        -((xx - xk) ** 2 + (yy - yk) ** 2 + (zz - zk) ** 2) / sigma**2
+                        -((xx - xk) ** 2 + (yy - yk) ** 2 + (zz - zk) ** 2)
+                        / sigma**2
                     )
 
                 return phi
@@ -82,8 +91,16 @@ for name in filenames:
                 phi = (xx**2 + yy**2 + zz**2) - r0**2
                 for k in range(0, 12):
                     if k >= 0 and k <= 4:
-                        xk = (r0 / np.sqrt(5)) * 2.0 * np.cos(2.0 * k * np.pi / 5.0)
-                        yk = (r0 / np.sqrt(5)) * 2.0 * np.sin(2.0 * k * np.pi / 5.0)
+                        xk = (
+                            (r0 / np.sqrt(5))
+                            * 2.0
+                            * np.cos(2.0 * k * np.pi / 5.0)
+                        )
+                        yk = (
+                            (r0 / np.sqrt(5))
+                            * 2.0
+                            * np.sin(2.0 * k * np.pi / 5.0)
+                        )
                         zk = r0 / np.sqrt(5)
                     elif k >= 5 and k <= 9:
                         xk = (
@@ -106,7 +123,8 @@ for name in filenames:
                         yk = 0.0
                         zk = -r0
                     phi -= A * np.exp(
-                        -((xx - xk) ** 2 + (yy - yk) ** 2 + (zz - zk) ** 2) / sigma**2
+                        -((xx - xk) ** 2 + (yy - yk) ** 2 + (zz - zk) ** 2)
+                        / sigma**2
                     )
                 value[0] = phi
 
@@ -120,7 +138,9 @@ for name in filenames:
         V_phi = df.FunctionSpace(mesh_macro, "CG", 2)
         phi = phi_expr(element=V_phi.ufl_element())
         phi = df.interpolate(phi, V_phi)
-        domains = df.MeshFunction("size_t", mesh_macro, mesh_macro.topology().dim())
+        domains = df.MeshFunction(
+            "size_t", mesh_macro, mesh_macro.topology().dim()
+        )
         domains.set_all(0)
         for ind in range(mesh_macro.num_cells()):
             mycell = df.Cell(mesh_macro, ind)
@@ -166,8 +186,16 @@ for name in filenames:
                 phi = (xx**2 + yy**2 + zz**2) - r0**2
                 for k in range(0, 12):
                     if k >= 0 and k <= 4:
-                        xk = (r0 / np.sqrt(5)) * 2.0 * np.cos(2.0 * k * np.pi / 5.0)
-                        yk = (r0 / np.sqrt(5)) * 2.0 * np.sin(2.0 * k * np.pi / 5.0)
+                        xk = (
+                            (r0 / np.sqrt(5))
+                            * 2.0
+                            * np.cos(2.0 * k * np.pi / 5.0)
+                        )
+                        yk = (
+                            (r0 / np.sqrt(5))
+                            * 2.0
+                            * np.sin(2.0 * k * np.pi / 5.0)
+                        )
                         zk = r0 / np.sqrt(5)
                     elif k >= 5 and k <= 9:
                         xk = (
@@ -190,7 +218,8 @@ for name in filenames:
                         yk = 0.0
                         zk = -r0
                     phi -= A * np.exp(
-                        -((xx - xk) ** 2 + (yy - yk) ** 2 + (zz - zk) ** 2) / sigma**2
+                        -((xx - xk) ** 2 + (yy - yk) ** 2 + (zz - zk) ** 2)
+                        / sigma**2
                     )
 
                 return phi

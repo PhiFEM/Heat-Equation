@@ -61,8 +61,7 @@ ghost = True
 compute_times = True
 # save results
 write_output = True
-# Compute the conditioning number
-conditioning = False
+
 
 # Function used to write in the outputs files
 def output_latex(f, A, B):
@@ -85,7 +84,9 @@ f = open(
 
 # Computation of the exact solution and exact source term
 t, x, y = sympy.symbols("tt xx yy")
-u1 = sympy.cos(sympy.pi / 2.0 * (x**2 + y**2)) * sympy.sin(t) * sympy.exp(x)
+u1 = (
+    sympy.cos(sympy.pi / 2.0 * (x**2 + y**2)) * sympy.sin(t) * sympy.exp(x)
+)
 f1 = (
     sympy.diff(u1, t)
     - sympy.diff(sympy.diff(u1, x), x)
@@ -100,7 +101,6 @@ f1 = (
 size_mesh_phi_fem_vec = np.zeros(Iter)
 error_L2_phi_fem_vec = np.zeros(Iter)
 error_H1_phi_fem_vec = np.zeros(Iter)
-cond_phi_fem_vec = np.zeros(Iter)
 size_matrices_phi_fem = np.zeros(Iter)
 if compute_times:
     computation_time_phi_fem = np.zeros(Iter)
@@ -116,15 +116,21 @@ for i in range(0, Iter):
 
     # Construction of the mesh
     N = int(8 * 2 ** ((i)))
-    mesh_macro = df.RectangleMesh(df.Point(-1.5, -1.5), df.Point(1.5, 1.5), N, N)
+    mesh_macro = df.RectangleMesh(
+        df.Point(-1.5, -1.5), df.Point(1.5, 1.5), N, N
+    )
     dt = mesh_macro.hmax() ** exp_dt
     Time = np.arange(0, T, dt)
     V_phi = df.FunctionSpace(mesh_macro, "CG", degPhi)
     phi = df.Expression(
-        "-(1.) + ((x[0])*(x[0]) + (x[1])*(x[1]))", degree=degPhi, domain=mesh_macro
+        "-(1.) + ((x[0])*(x[0]) + (x[1])*(x[1]))",
+        degree=degPhi,
+        domain=mesh_macro,
     )
     phi = df.interpolate(phi, V_phi)
-    domains = df.MeshFunction("size_t", mesh_macro, mesh_macro.topology().dim())
+    domains = df.MeshFunction(
+        "size_t", mesh_macro, mesh_macro.topology().dim()
+    )
     domains.set_all(0)
     for ind in range(mesh_macro.num_cells()):
         mycell = df.Cell(mesh_macro, ind)
@@ -215,7 +221,8 @@ for i in range(0, Iter):
     )
     if ghost == True:
         a += G_h(phi * w, phi * v) - sigma * h**2 * df.inner(
-            phi * w * dt ** (-1) - df.div(df.grad(phi * w)), df.div(df.grad(phi * v))
+            phi * w * dt ** (-1) - df.div(df.grad(phi * w)),
+            df.div(df.grad(phi * v)),
         ) * dx(1)
 
     for ind in range(1, len(Time)):
@@ -278,13 +285,6 @@ for i in range(0, Iter):
     print("h :", mesh.hmax())
     print("relative L2 error : ", err_L2)
     print("relative H1 error : ", err_H1)
-    if conditioning == True:
-        A = np.matrix(df.assemble(a).array())
-        ev, eV = np.linalg.eig(A)
-        ev = abs(ev)
-        cond = np.max(ev) / np.min(ev)
-        cond_phi_fem_vec[i] = cond
-        print("conditioning number x h^2", cond)
     print("")
 
 if write_output:
@@ -312,7 +312,6 @@ if write_output:
 size_mesh_standard_vec = np.zeros(Iter)
 error_L2_standard_vec = np.zeros(Iter)
 error_H1_standard_vec = np.zeros(Iter)
-cond_standard_vec = np.zeros(Iter)
 size_matrices_standard_fem = np.zeros(Iter)
 if compute_times:
     computation_time_standard_fem = np.zeros(Iter)
@@ -421,13 +420,6 @@ for i in range(0, Iter):
     print("h :", mesh.hmax())
     print("relative L2 error : ", err_L2)
     print("relative H1 error : ", err_H1)
-    if conditioning == True:
-        A = np.matrix(df.assemble(a).array())
-        ev, eV = np.linalg.eig(A)
-        ev = abs(ev)
-        cond = np.max(ev) / np.min(ev)
-        cond_standard_vec[i] = cond
-        print("conditioning number x h^2", cond)
     print("")
 
 
@@ -454,19 +446,11 @@ if write_output:
 print("Vector h phi fem:", size_mesh_phi_fem_vec)
 print("Vector relative L2 error phi fem : ", error_L2_phi_fem_vec)
 print("Vector relative H1 error phi fem : ", error_H1_phi_fem_vec)
-if conditioning and write_output:
-    f.write("conditionning number phi fem x h^2 : \n")
-    output_latex(f, size_mesh_phi_fem_vec, cond_phi_fem_vec)
-    print("conditioning number phi_fem", cond_phi_fem_vec)
 
 # Print the output vectors standard fem
 print("Vector h standard fem:", size_mesh_standard_vec)
 print("Vector relative L2 error standard fem : ", error_L2_standard_vec)
 print("Vector relative H1 error standard fem : ", error_H1_standard_vec)
-if conditioning and write_output:
-    f.write("conditionning number standard fem x h^2 : \n")
-    output_latex(f, size_mesh_standard_vec, cond_standard_vec)
-    print(f"conditioning number standard fem : {cond_standard_vec}")
 
 if write_output:
     f.close()
@@ -486,15 +470,21 @@ if test_case == 1 or test_case == 3:
     plt.ylabel("error")
 
     plt.subplot(2, 2, 2)
-    plt.loglog(computation_time_phi_fem, error_H1_phi_fem_vec, label="H1 phiFEM")
-    plt.loglog(computation_time_standard_fem, error_H1_standard_vec, label="H1 std")
+    plt.loglog(
+        computation_time_phi_fem, error_H1_phi_fem_vec, label="H1 phiFEM"
+    )
+    plt.loglog(
+        computation_time_standard_fem, error_H1_standard_vec, label="H1 std"
+    )
     plt.legend()
     plt.xlabel("computation time")
     plt.ylabel("error")
 
     plt.subplot(2, 2, 3)
     plt.loglog(size_matrices_phi_fem, assembly_time_phi_fem, label="phiFEM")
-    plt.loglog(size_matrices_standard_fem, assembly_time_standard_fem, label="std")
+    plt.loglog(
+        size_matrices_standard_fem, assembly_time_standard_fem, label="std"
+    )
     plt.legend()
     plt.xlabel("size matrices")
     plt.ylabel("assembly time")
@@ -520,15 +510,21 @@ elif test_case == 2 or test_case == 4:
     plt.ylabel("error")
 
     plt.subplot(2, 2, 2)
-    plt.loglog(computation_time_phi_fem, error_L2_phi_fem_vec, label="L2 phiFEM")
-    plt.loglog(computation_time_standard_fem, error_L2_standard_vec, label="L2 std")
+    plt.loglog(
+        computation_time_phi_fem, error_L2_phi_fem_vec, label="L2 phiFEM"
+    )
+    plt.loglog(
+        computation_time_standard_fem, error_L2_standard_vec, label="L2 std"
+    )
     plt.legend()
     plt.xlabel("computation time")
     plt.ylabel("error")
 
     plt.subplot(2, 2, 3)
     plt.loglog(size_matrices_phi_fem, assembly_time_phi_fem, label="phiFEM")
-    plt.loglog(size_matrices_standard_fem, assembly_time_standard_fem, label="std")
+    plt.loglog(
+        size_matrices_standard_fem, assembly_time_standard_fem, label="std"
+    )
     plt.legend()
     plt.xlabel("size matrices")
     plt.ylabel("assembly time")
@@ -541,5 +537,7 @@ elif test_case == 2 or test_case == 4:
     plt.ylabel("error")
 
 plt.tight_layout()
-plt.savefig(f"./outputs/plot_problem_euler_test_case_{test_case}_sigma_{sigma}.png")
+plt.savefig(
+    f"./outputs/plot_problem_euler_test_case_{test_case}_sigma_{sigma}.png"
+)
 plt.show()

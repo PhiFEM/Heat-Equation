@@ -19,8 +19,6 @@ df.parameters["allow_extrapolation"] = True
 # test case :
 # 1) L2H1 error , P^1
 # 2) LinfL2 error, P^1
-# 3) L2H1 error , P^2
-# 4) LinfL2 error, P^2
 test_case = 1
 
 if test_case == 1:
@@ -28,22 +26,22 @@ if test_case == 1:
     # puissance on dt
     exp_dt = 1.0
     # Number of iterations
-    Iter = 3
+    Iter = 5
     degV = 1
-    exact_mesh_size = 0.01
+    exact_mesh_size = 0.013
 elif test_case == 2:
     # expected slope 2
     # puissance on dt
     exp_dt = 2.0
     # Number of iterations
-    Iter = 4
+    Iter = 5
     degV = 1
-    exact_mesh_size = 0.034
+    exact_mesh_size = 0.016
 
 # Final time of the simulation
 T = 1.0
 # parameter of the ghost penalty
-sigma = 0.1
+sigma = 1.0
 # Polynome Pk
 degPhi = degV + 1
 # Ghost penalty
@@ -52,8 +50,7 @@ ghost = True
 compute_times = True
 # save results
 write_output = True
-# Compute the conditioning number
-conditioning = False
+
 
 # Function used to write in the outputs files
 def output_latex(f, A, B):
@@ -76,9 +73,22 @@ f = open(
     "w",
 )
 
-
-if not os.path.exists("./meshes"):
-    os.makedirs("./meshes")
+if not os.path.exists("./data"):
+    os.makedirs("./data")
+if not os.path.exists("./data/meshes"):
+    os.makedirs("./data/meshes")
+if not os.path.exists("./data/f"):
+    os.makedirs("./data/f")
+if not os.path.exists("./data/f_exact"):
+    os.makedirs("./data/f_exact")
+if not os.path.exists("./data/sol"):
+    os.makedirs("./data/sol")
+if not os.path.exists("./data/sol_exact"):
+    os.makedirs("./data/sol_exact")
+if not os.path.exists("./data/f_std"):
+    os.makedirs("./data/f_std")
+if not os.path.exists("./data/sol_std"):
+    os.makedirs("./data/sol_std")
 
 
 class phi_expr(df.UserExpression):
@@ -112,7 +122,8 @@ class phi_expr(df.UserExpression):
                 yk = 0.0
                 zk = -r0
             phi -= A * np.exp(
-                -((xx - xk) ** 2 + (yy - yk) ** 2 + (zz - zk) ** 2) / sigma**2
+                -((xx - xk) ** 2 + (yy - yk) ** 2 + (zz - zk) ** 2)
+                / sigma**2
             )
         value[0] = phi
 
@@ -154,7 +165,8 @@ class Popcorn(pygalmesh.DomainBase):
                 yk = 0.0
                 zk = -r0
             phi -= A * np.exp(
-                -((xx - xk) ** 2 + (yy - yk) ** 2 + (zz - zk) ** 2) / sigma**2
+                -((xx - xk) ** 2 + (yy - yk) ** 2 + (zz - zk) ** 2)
+                / sigma**2
             )
 
         return phi
@@ -169,20 +181,20 @@ print(f"{text:#^27}")
 print("###########################")
 
 
-if not os.path.exists(f"./meshes/popcorn_exact_{exact_mesh_size}.xml"):
+if not os.path.exists(f"./data/meshes/popcorn_exact_{exact_mesh_size}.xml"):
     d = Popcorn()
     mesh = pygalmesh.generate_mesh(d, max_cell_circumradius=exact_mesh_size)
-    mesh.write(f"./meshes/popcorn_exact_{exact_mesh_size}.xml")
-mesh_exact = df.Mesh(f"./meshes/popcorn_exact_{exact_mesh_size}.xml")
+    mesh.write(f"./data/meshes/popcorn_exact_{exact_mesh_size}.xml")
+mesh_exact = df.Mesh(f"./data/meshes/popcorn_exact_{exact_mesh_size}.xml")
 
-# vdf.plot(mesh_exact, c='purple')
-# vedo.close()
 print(f"{mesh_exact.hmax()=}")
 
 V_exact = df.FunctionSpace(mesh_exact, "CG", degV)
 # Computation of the source term
 t, x, y, z = sympy.symbols("tt xx yy zz")
-f1 = sympy.cos(sympy.pi * x) * sympy.exp(y) * sympy.cos(z)
+f1 = sympy.exp(
+    -((x - 0.2) ** 2 + (y - 0.3) ** 2 + (z + 0.1) ** 2) / (2.0 * 0.3**2)
+)
 
 # Define boundary condition
 bc_exact = df.DirichletBC(V_exact, df.Constant(0.0), "on_boundary")
@@ -190,9 +202,10 @@ dx_exact = df.Measure("dx")(domain=mesh_exact)
 dt_exact = mesh_exact.hmax() ** exp_dt
 Time_exact = np.arange(0.0, T, dt_exact)
 
-f_exact = []
+# f_exact = []
+index_temps = 0
 for temps in Time_exact:
-    f_exact += [
+    f_exact = df.project(
         df.Expression(
             sympy.ccode(f1)
             .replace("xx", "x[0]")
@@ -202,31 +215,57 @@ for temps in Time_exact:
             temps=temps,
             degree=degV + 1,
             domain=mesh_exact,
-        )
-    ]
+        ),
+        V_exact,
+        solver_type="gmres",
+        preconditioner_type="hypre_amg",
+    )
+
+    np.save(
+        f"./data/f_exact/f_exact_{index_temps}.npy",
+        f_exact.vector().get_local(),
+    )
+    index_temps += 1
 
 # Resolution
 u_exact = df.TrialFunction(V_exact)
 v_exact = df.TestFunction(V_exact)
 u_n_exact = df.Expression("0.0", degree=degV, domain=mesh_exact)
-sol_exact = [u_n_exact]
+sol_exact = df.project(
+    u_n_exact, V_exact, solver_type="gmres", preconditioner_type="hypre_amg"
+)
+np.save(f"./data/sol_exact/sol_exact_{0}.npy", sol_exact.vector().get_local())
 a_exact = (
     dt_exact ** (-1) * u_exact * v_exact * dx_exact
     + df.inner(df.grad(u_exact), df.grad(v_exact)) * dx_exact
 )
 for ind in range(1, len(Time_exact)):
+    f_exact_array = np.load(f"./data/f_exact/f_exact_{ind}.npy")
+    loaded_f_exact = df.Function(V_exact)
+    loaded_f_exact.vector()[:] = f_exact_array
     L_exact = (
         dt_exact ** (-1) * u_n_exact * v_exact * dx_exact
-        + f_exact[ind] * v_exact * dx_exact
+        + loaded_f_exact * v_exact * dx_exact
     )
     u_n1_exact = df.Function(V_exact)
     df.solve(
         a_exact == L_exact,
         u_n1_exact,
         bc_exact,
-        solver_parameters={"linear_solver": "gmres", "preconditioner":"hypre_amg"},
+        solver_parameters={
+            "linear_solver": "gmres",
+            "preconditioner": "hypre_amg",
+        },
     )
-    sol_exact = sol_exact + [u_n1_exact]
+    sol_exact = df.project(
+        u_n1_exact,
+        V_exact,
+        solver_type="gmres",
+        preconditioner_type="hypre_amg",
+    )
+    np.save(
+        f"./data/sol_exact/sol_exact_{ind}.npy", sol_exact.vector().get_local()
+    )
     u_n_exact = u_n1_exact
     print("(", ind, "/", len(Time_exact) - 1, ")")
 print("Exact solution computed")
@@ -239,9 +278,6 @@ print("Exact solution computed")
 size_mesh_phi_fem_vec = np.zeros(Iter)
 error_L2_phi_fem_vec = np.zeros(Iter)
 error_H1_phi_fem_vec = np.zeros(Iter)
-cond_phi_fem_vec = np.zeros(Iter)
-size_matrices_phi_fem = np.zeros(Iter)
-
 
 size = 1
 for i in range(0, Iter):
@@ -258,9 +294,12 @@ for i in range(0, Iter):
 
     hmax = 1.0e4
     while hmax > (dt + df.DOLFIN_EPS) ** (1.0 / exp_dt):
-
         mesh_macro = df.BoxMesh(
-            df.Point(-2.0, -2.0, -2.0), df.Point(2.0, 2.0, 2.0), size, size, size
+            df.Point(-2.0, -2.0, -2.0),
+            df.Point(2.0, 2.0, 2.0),
+            size,
+            size,
+            size,
         )
         size += 1
         hmax = mesh_macro.hmax()
@@ -270,7 +309,9 @@ for i in range(0, Iter):
     phi = phi_expr(element=V_phi.ufl_element())
     phi = df.interpolate(phi, V_phi)
 
-    domains = df.MeshFunction("size_t", mesh_macro, mesh_macro.topology().dim())
+    domains = df.MeshFunction(
+        "size_t", mesh_macro, mesh_macro.topology().dim()
+    )
     domains.set_all(0)
     for ind in range(mesh_macro.num_cells()):
         mycell = df.Cell(mesh_macro, ind)
@@ -333,9 +374,11 @@ for i in range(0, Iter):
                     facet_ghost[myfacet2] = 1
 
     # Computation of the source term and exact solution
+
     f_expr = []
+    index_temps = 0
     for temps in Time:
-        f_expr += [
+        f_expr = df.project(
             df.Expression(
                 sympy.ccode(f1)
                 .replace("xx", "x[0]")
@@ -345,8 +388,17 @@ for i in range(0, Iter):
                 temps=temps,
                 degree=degV + 1,
                 domain=mesh,
-            )
-        ]
+            ),
+            V,
+            solver_type="gmres",
+            preconditioner_type="hypre_amg",
+        )
+
+        np.save(
+            f"./data/f/f_expr_{index_temps}.npy", f_expr.vector().get_local()
+        )
+        index_temps += 1
+
     # Initialize cell function for domains
     dx = df.Measure("dx")(domain=mesh, subdomain_data=cell_ghost)
     ds = df.Measure("ds")(domain=mesh)
@@ -367,7 +419,11 @@ for i in range(0, Iter):
 
     # Computation of u_0
     wn = df.Expression("0.0", degree=degV, domain=mesh)
-    sol = [phi * wn]
+    sol = phi * wn
+    sol = df.project(
+        sol, V, solver_type="gmres", preconditioner_type="hypre_amg"
+    )
+    np.save(f"./data/sol/sol_{0}.npy", sol.vector().get_local())
     a = (
         dt ** (-1) * phi * w * phi * v * dx
         + df.inner(df.grad(phi * w), df.grad(phi * v)) * dx
@@ -375,16 +431,21 @@ for i in range(0, Iter):
     )
     if ghost == True:
         a += G_h(phi * w, phi * v) - sigma * h**2 * df.inner(
-            phi * w * dt ** (-1) - df.div(df.grad(phi * w)), df.div(df.grad(phi * v))
+            phi * w * dt ** (-1) - df.div(df.grad(phi * w)),
+            df.div(df.grad(phi * v)),
         ) * dx(1)
 
     for ind in range(1, len(Time)):
-        L = f_expr[ind] * phi * v * dx + dt ** (-1) * phi * wn * phi * v * dx
+        f_expr_array = np.load(f"./data/f/f_expr_{ind}.npy")
+        loaded_f_expr = df.Function(V)
+        loaded_f_expr.vector()[:] = f_expr_array
+
+        L = loaded_f_expr * phi * v * dx + dt ** (-1) * phi * wn * phi * v * dx
         if ghost == True:
             L += (
                 -sigma
                 * h**2
-                * df.inner(f_expr[ind], df.div(df.grad(phi * v)))
+                * df.inner(loaded_f_expr, df.div(df.grad(phi * v)))
                 * dx(1)
             )
             L += (
@@ -396,15 +457,20 @@ for i in range(0, Iter):
 
         w_n1 = df.Function(V)
 
-        # df.solve(A, w_n1.vector(), B)
         df.solve(
-        a == L,
-        w_n1,
-        solver_parameters={"linear_solver": "gmres", "preconditioner":"hypre_amg"},
-    )
+            a == L,
+            w_n1,
+            solver_parameters={
+                "linear_solver": "gmres",
+                "preconditioner": "hypre_amg",
+            },
+        )
 
         wn = w_n1
-        sol += [phi * wn]
+        sol = df.project(
+            phi * wn, V, solver_type="gmres", preconditioner_type="hypre_amg"
+        )
+        np.save(f"./data/sol/sol_{ind}.npy", sol.vector().get_local())
         print("(", i + 1, ",", ind, "/", len(Time) - 1, ")")
     # Computation of the error
     norm_L2_exact = 0.0
@@ -413,8 +479,19 @@ for i in range(0, Iter):
     err_H1 = 0.0
     j_exact = 0
     for j in range(len(Time)):
-        sol_exactj = sol_exact[2 ** (Iter - i) * j]
-        Iu_hj = df.project(sol[j], V_exact, solver_type="gmres", preconditioner_type="hypre_amg")
+        sol_exact_array = np.load(
+            f"./data/sol_exact/sol_exact_{int(2 ** (Iter - i) * j)}.npy"
+        )
+        sol_exactj = df.Function(V_exact)
+        sol_exactj.vector()[:] = sol_exact_array
+
+        sol_array = np.load(f"./data/sol/sol_{j}.npy")
+        solj = df.Function(V)
+        solj.vector()[:] = sol_array
+
+        Iu_hj = df.project(
+            solj, V_exact, solver_type="gmres", preconditioner_type="hypre_amg"
+        )
         norm_L2_exact_j = df.assemble(sol_exactj**2 * dx_exact)
         if norm_L2_exact < norm_L2_exact_j:
             norm_L2_exact = norm_L2_exact_j
@@ -433,13 +510,6 @@ for i in range(0, Iter):
     print("h :", mesh.hmax())
     print("relative L2 error : ", err_L2)
     print("relative H1 error : ", err_H1)
-    if conditioning == True:
-        A = np.matrix(df.assemble(a).array())
-        ev, eV = np.linalg.eig(A)
-        ev = abs(ev)
-        cond = np.max(ev) / np.min(ev)
-        cond_phi_fem_vec[i] = cond
-        print("conditioning number x h^2", cond)
     print("")
 
 if write_output:
@@ -452,8 +522,6 @@ if write_output:
 size_mesh_standard_vec = np.zeros(Iter)
 error_L2_standard_vec = np.zeros(Iter)
 error_H1_standard_vec = np.zeros(Iter)
-cond_standard_vec = np.zeros(Iter)
-size_matrices_standard_fem = np.zeros(Iter)
 
 size = 0.6
 for i in range(0, Iter):
@@ -462,7 +530,6 @@ for i in range(0, Iter):
     print(f"{text:#^27}")
     print("###########################")
 
-    # Construction of the mesh
     dt = dt_exact * (2 ** (Iter - i))
     print(f"{dt_exact=}")
     print(f"{dt=}")
@@ -470,16 +537,21 @@ for i in range(0, Iter):
     # Construction of the mesh
     hmax = 1.0e4
 
-    if not os.path.exists(f"./meshes/popcorn_{exact_mesh_size}_iter_{i}.xml"):
+    if not os.path.exists(
+        f"./data/meshes/popcorn_{exact_mesh_size}_iter_{i}.xml"
+    ):
         d = Popcorn()
         while hmax > (dt + df.DOLFIN_EPS) ** (1.0 / exp_dt):
             mesh = pygalmesh.generate_mesh(d, max_cell_circumradius=size)
-            mesh.write(f"./meshes/popcorn_{exact_mesh_size}_iter_{i}.xml")
-            mesh = df.Mesh(f"./meshes/popcorn_{exact_mesh_size}_iter_{i}.xml")
+            mesh.write(f"./data/meshes/popcorn_{exact_mesh_size}_iter_{i}.xml")
+            mesh = df.Mesh(
+                f"./data/meshes/popcorn_{exact_mesh_size}_iter_{i}.xml"
+            )
             size -= 0.001
             hmax = mesh.hmax()
     else:
-        mesh = df.Mesh(f"./meshes/popcorn_{exact_mesh_size}_iter_{i}.xml")
+        mesh = df.Mesh(f"./data/meshes/popcorn_{exact_mesh_size}_iter_{i}.xml")
+        hmax = mesh.hmax()
 
     print(f"{hmax**exp_dt=}    {size=}     {dt=}")
 
@@ -487,9 +559,11 @@ for i in range(0, Iter):
 
     # Computation of the source term
     uD = df.Expression("0.0", degree=degV, domain=mesh)
-    f_expr = []
+    bc = df.DirichletBC(V, df.Constant(0.0), "on_boundary")
+
+    index_temps = 0
     for temps in Time:
-        f_expr += [
+        f_std = df.project(
             df.Expression(
                 sympy.ccode(f1)
                 .replace("xx", "x[0]")
@@ -499,37 +573,50 @@ for i in range(0, Iter):
                 temps=temps,
                 degree=degV + 1,
                 domain=mesh,
-            )
-        ]
+            ),
+            V,
+            solver_type="gmres",
+            preconditioner_type="hypre_amg",
+        )
 
-    bc = df.DirichletBC(V, uD, "on_boundary")
-    # Initialize cell function for domains
-    dx = df.Measure("dx")(domain=mesh)
-    ds = df.Measure("ds")(domain=mesh)
-    dS = df.Measure("dS")(domain=mesh)
+        np.save(
+            f"./data/f_std/f_std_{index_temps}.npy", f_std.vector().get_local()
+        )
+        index_temps += 1
+
     # Resolution
-    n = df.FacetNormal(mesh)
-    h = df.CellDiameter(mesh)
     u = df.TrialFunction(V)
     v = df.TestFunction(V)
-    u_n = uD
-    sol = [u_n]
+    dx = df.Measure("dx", domain=mesh)
+    u_n = df.Expression("0.0", degree=degV, domain=mesh)
+    sol_std = df.project(
+        u_n, V, solver_type="gmres", preconditioner_type="hypre_amg"
+    )
+    np.save(f"./data/sol_std/sol_std_{0}.npy", sol_std.vector().get_local())
     a = dt ** (-1) * u * v * dx + df.inner(df.grad(u), df.grad(v)) * dx
     for ind in range(1, len(Time)):
-        L = dt ** (-1) * u_n * v * dx + f_expr[ind] * v * dx
+        f_std_array = np.load(f"./data/f_std/f_std_{ind}.npy")
+        loaded_f_std = df.Function(V)
+        loaded_f_std.vector()[:] = f_std_array
+        L = dt ** (-1) * u_n * v * dx + loaded_f_std * v * dx
         u_n1 = df.Function(V)
-
-        # df.solve(A, u_n1.vector(), B)
         df.solve(
-        a == L,
-        u_n1,
-        bc,
-        solver_parameters={"linear_solver": "gmres", "preconditioner":"hypre_amg"},
-    )
-
-        sol = sol + [u_n1]
+            a == L,
+            u_n1,
+            bc,
+            solver_parameters={
+                "linear_solver": "gmres",
+                "preconditioner": "hypre_amg",
+            },
+        )
+        sol_std = df.project(
+            u_n1, V, solver_type="gmres", preconditioner_type="hypre_amg"
+        )
+        np.save(
+            f"./data/sol_std/sol_std_{ind}.npy", sol_std.vector().get_local()
+        )
         u_n = u_n1
-        print("(", i + 1, ",", ind, "/", len(Time) - 1, ")")
+        print("(", ind, "/", len(Time) - 1, ")")
 
     # Computation of the error
     norm_L2_exact = 0.0
@@ -538,8 +625,19 @@ for i in range(0, Iter):
     err_H1 = 0.0
     j_exact = 0
     for j in range(len(Time)):
-        sol_exactj = sol_exact[2 ** (Iter - i) * j]
-        Iu_hj = df.project(sol[j], V_exact, solver_type="gmres", preconditioner_type="hypre_amg")
+        sol_exact_array = np.load(
+            f"./data/sol_exact/sol_exact_{int(2 ** (Iter - i) * j)}.npy"
+        )
+        sol_exactj = df.Function(V_exact)
+        sol_exactj.vector()[:] = sol_exact_array
+
+        sol_array = np.load(f"./data/sol_std/sol_std_{j}.npy")
+        solj = df.Function(V)
+        solj.vector()[:] = sol_array
+
+        Iu_hj = df.project(
+            solj, V_exact, solver_type="gmres", preconditioner_type="hypre_amg"
+        )
         norm_L2_exact_j = df.assemble(sol_exactj**2 * dx_exact)
         if norm_L2_exact < norm_L2_exact_j:
             norm_L2_exact = norm_L2_exact_j
@@ -557,13 +655,6 @@ for i in range(0, Iter):
     print("h :", mesh.hmax())
     print("relative L2 error : ", err_L2)
     print("relative H1 error : ", err_H1)
-    if conditioning == True:
-        A = np.matrix(df.assemble(a).array())
-        ev, eV = np.linalg.eig(A)
-        ev = abs(ev)
-        cond = np.max(ev) / np.min(ev)
-        cond_standard_vec[i] = cond
-        print("conditioning number x h^2", cond)
     print("")
 
 if write_output:
@@ -571,27 +662,22 @@ if write_output:
     output_latex(f, size_mesh_standard_vec, error_L2_standard_vec)
     f.write("relative H1 norm standard fem : \n")
     output_latex(f, size_mesh_standard_vec, error_H1_standard_vec)
-   
+
 print("Size cell mesh exact:", mesh_exact.hmax())
 # Print the output vectors  phi_fem
 print("Vector h phi fem:", size_mesh_phi_fem_vec)
 print("Vector relative L2 error phi fem : ", error_L2_phi_fem_vec)
 print("Vector relative H1 error phi fem : ", error_H1_phi_fem_vec)
-if conditioning and write_output:
-    f.write("conditionning number phi fem x h^2 : \n")
-    output_latex(f, size_mesh_phi_fem_vec, cond_phi_fem_vec)
-    print("conditioning number phi_fem", cond_phi_fem_vec)
+
 
 # Print the output vectors  standard fem
 print("Vector h standard fem:", size_mesh_standard_vec)
 print("Vector relative L2 error standard fem : ", error_L2_standard_vec)
 print("Vector relative H1 error standard fem : ", error_H1_standard_vec)
-if conditioning and write_output:
-    f.write("conditionning number standard fem x h^2 : \n")
-    output_latex(f, size_mesh_standard_vec, cond_standard_vec)
-    print(f"conditioning number standard fem : {cond_standard_vec}")
+
 if write_output:
     f.close()
+
 
 plt.figure()
 if test_case == 1 or test_case == 3:
@@ -621,4 +707,3 @@ elif test_case == 2 or test_case == 4:
 plt.tight_layout()
 plt.savefig(f"outputs/plot_problem_test_case_{test_case}_sigma_{sigma}.png")
 plt.show()
-

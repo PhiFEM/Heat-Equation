@@ -8,7 +8,9 @@
     - `sigma_values.py` : code to emphasize the influence of $\sigma$ on the error;
     - `degree_phi.py` : code to emphasize the influence of $l$, the degree of interpolation of the level-set function, on the error;
     - `plot_meshes.py` : code to plot the domain, an example of mesh used for $\phi$-FEM and an example of conforming mesh used for standard FEM.
-  * Folder `popcorn` : solve the heat equation on a popcorn with $f=\cos(\pi * x) \exp(y) \cos(z)$, $u = 0$ on $\Gamma \times (0,T)$ and $u^0 = 0$ in $\Omega$.
+
+
+  * Folder `popcorn` : solve the heat equation on a popcorn with $f=\exp(-\frac{(x-0.2)^2 + (y-0.3)^2 + (z+0.1)^2}{2\times 0.3^2})$, $u = 0$ on $\Gamma \times (0,T)$ and $u^0 = 0$ in $\Omega$.
     - `main.py` : code to compare the errors of $\phi$-FEM and a standard FEM on the given problem.
     - `plot_meshes` : code to plot the popcorn domain, an example of mesh used for $\phi$-FEM and an example of conforming mesh used for standard FEM.
 

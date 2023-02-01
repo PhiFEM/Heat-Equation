@@ -60,8 +60,7 @@ ghost = True
 compute_times = True
 # save results
 write_output = True
-# Compute the conditioning number
-conditioning = False
+
 
 # Function used to write in the outputs files
 def output_latex(f, A, B):
@@ -76,14 +75,16 @@ def output_latex(f, A, B):
 
 if not os.path.exists("./outputs"):
     os.makedirs("./outputs")
-    
+
 f = open(
     f"./outputs/output_euler_homo_circle_manufactured_degPhi_T_{T}_dt_{int(exp_dt)}_h_P{degV}_sigma_{sigma}.txt",
     "w",
 )
 # Computation of the exact solution and exact source term
 t, x, y = sympy.symbols("tt xx yy")
-u1 = sympy.cos(sympy.pi / 2.0 * (x**2 + y**2)) * sympy.sin(t) * sympy.exp(x)
+u1 = (
+    sympy.cos(sympy.pi / 2.0 * (x**2 + y**2)) * sympy.sin(t) * sympy.exp(x)
+)
 f1 = (
     sympy.diff(u1, t)
     - sympy.diff(sympy.diff(u1, x), x)
@@ -100,7 +101,6 @@ for k in range(0, 4):
     size_mesh_phi_fem_vec = np.zeros(Iter)
     error_L2_phi_fem_vec = np.zeros(Iter)
     error_H1_phi_fem_vec = np.zeros(Iter)
-    cond_phi_fem_vec = np.zeros(Iter)
     size_matrices_phi_fem = np.zeros(Iter)
     if compute_times:
         computation_time_phi_fem = np.zeros(Iter)
@@ -117,15 +117,21 @@ for k in range(0, 4):
 
         # Construction of the mesh
         N = int(8 * 2 ** ((i)))
-        mesh_macro = df.RectangleMesh(df.Point(-1.5, -1.5), df.Point(1.5, 1.5), N, N)
+        mesh_macro = df.RectangleMesh(
+            df.Point(-1.5, -1.5), df.Point(1.5, 1.5), N, N
+        )
         dt = mesh_macro.hmax() ** exp_dt
         Time = np.arange(0, T, dt)
         V_phi = df.FunctionSpace(mesh_macro, "CG", degPhi)
         phi = df.Expression(
-            "-(1.) + ((x[0])*(x[0]) + (x[1])*(x[1]))", degree=degPhi, domain=mesh_macro
+            "-(1.) + ((x[0])*(x[0]) + (x[1])*(x[1]))",
+            degree=degPhi,
+            domain=mesh_macro,
         )
         phi = df.interpolate(phi, V_phi)
-        domains = df.MeshFunction("size_t", mesh_macro, mesh_macro.topology().dim())
+        domains = df.MeshFunction(
+            "size_t", mesh_macro, mesh_macro.topology().dim()
+        )
         domains.set_all(0)
         for ind in range(mesh_macro.num_cells()):
             mycell = df.Cell(mesh_macro, ind)
@@ -138,13 +144,17 @@ for k in range(0, 4):
         # Construction of phi
         V_phi = df.FunctionSpace(mesh, "CG", degPhi)
         phi = df.Expression(
-            "-(1.) + ((x[0])*(x[0]) + (x[1])*(x[1]))", degree=degPhi, domain=mesh
+            "-(1.) + ((x[0])*(x[0]) + (x[1])*(x[1]))",
+            degree=degPhi,
+            domain=mesh,
         )
         phi = df.interpolate(phi, V_phi)
 
         # Facets and cells where we apply the ghost penalty
         mesh.init(1, 2)
-        facet_ghost = df.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+        facet_ghost = df.MeshFunction(
+            "size_t", mesh, mesh.topology().dim() - 1
+        )
         cell_ghost = df.MeshFunction("size_t", mesh, mesh.topology().dim())
         facet_ghost.set_all(0)
         cell_ghost.set_all(0)
@@ -220,7 +230,10 @@ for k in range(0, 4):
             ) * dx(1)
 
         for ind in range(1, len(Time)):
-            L = f_expr[ind] * phi * v * dx + dt ** (-1) * phi * wn * phi * v * dx
+            L = (
+                f_expr[ind] * phi * v * dx
+                + dt ** (-1) * phi * wn * phi * v * dx
+            )
             if ghost == True:
                 L += (
                     -sigma
@@ -279,13 +292,6 @@ for k in range(0, 4):
         print("h :", mesh.hmax())
         print("relative L2 error : ", err_L2)
         print("relative H1 error : ", err_H1)
-        if conditioning == True:
-            A = np.matrix(df.assemble(a).array())
-            ev, eV = np.linalg.eig(A)
-            ev = abs(ev)
-            cond = np.max(ev) / np.min(ev)
-            cond_phi_fem_vec[i] = cond
-            print("conditioning number x h^2", cond)
         print("")
 
     if write_output:
@@ -295,12 +301,14 @@ for k in range(0, 4):
         f.write("relative H1 norm phi fem : \n")
         output_latex(f, size_mesh_phi_fem_vec, error_H1_phi_fem_vec)
 
-    plt.loglog(size_mesh_phi_fem_vec, error_H1_phi_fem_vec, label="l = " + str(degPhi))
+    plt.loglog(
+        size_mesh_phi_fem_vec, error_H1_phi_fem_vec, label="l = " + str(degPhi)
+    )
 plt.legend()
 plt.xlabel("h")
-if test_case == 1 or test_case == 3 : 
+if test_case == 1 or test_case == 3:
     plt.ylabel("l2(H1) error")
-elif test_case == 2 or test_case == 4 : 
+elif test_case == 2 or test_case == 4:
     plt.ylabel("linf(L2) error")
 
 plt.tight_layout()

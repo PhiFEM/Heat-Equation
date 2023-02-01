@@ -27,7 +27,9 @@ print("###########################")
 circle = Disc(pos=(0.0, 0.0), r1=1.0, r2=1.0 + 0.004, c="black")
 circle_inside = Disc(pos=(0.0, 0.0), r1=0.0, r2=1.0, c="gray")
 Omega = r"\Omega"
-formula = vedo.Latex(Omega, c="k", s=0.3, usetex=False, res=60).pos(-0.25, -0.25, 0)
+formula = vedo.Latex(Omega, c="k", s=0.3, usetex=False, res=60).pos(
+    -0.25, -0.25, 0
+)
 vedo.show(circle, circle_inside, formula)
 vedo.screenshot("outputs/domain.png")
 vedo.close()
@@ -43,7 +45,9 @@ print("###########################")
 N = int(40 * 2 ** ((i)))
 mesh_macro = df.RectangleMesh(df.Point(-2.0, -2.0), df.Point(2.0, 2.0), N, N)
 V_phi = df.FunctionSpace(mesh_macro, "CG", degPhi)
-phi = df.Expression("-1. +pow(x[0],2)+pow(x[1],2)", degree=degPhi, domain=mesh_macro)
+phi = df.Expression(
+    "-1. +pow(x[0],2)+pow(x[1],2)", degree=degPhi, domain=mesh_macro
+)
 phi = df.interpolate(phi, V_phi)
 domains = df.MeshFunction("size_t", mesh_macro, mesh_macro.topology().dim())
 domains.set_all(0)
