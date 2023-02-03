@@ -12,13 +12,14 @@ df.parameters["ghost_mode"] = "shared_facet"
 df.parameters["form_compiler"]["cpp_optimize"] = True
 df.parameters["form_compiler"]["optimize"] = True
 df.parameters["allow_extrapolation"] = True
+df.parameters["krylov_solver"]["nonzero_initial_guess"] = True
 
 # test case :
 # 1) L2H1 error , P^1
 # 2) LinfL2 error, P^1
 # 3) L2H1 error , P^2
 # 4) LinfL2 error, P^2
-test_case = 2
+test_case = 1
 
 if test_case == 1:
     # expected slope 1
@@ -225,6 +226,13 @@ for i in range(0, Iter):
             df.div(df.grad(phi * v)),
         ) * dx(1)
 
+    if compute_times:
+        start_assemble = time.time()
+    A = df.assemble(a)
+    if compute_times:
+        end_assemble = time.time()
+        assembly_time_phi_fem[i] = end_assemble - start_assemble
+
     for ind in range(1, len(Time)):
         L = f_expr[ind] * phi * v * dx + dt ** (-1) * phi * wn * phi * v * dx
         if ghost == True:
@@ -242,12 +250,7 @@ for i in range(0, Iter):
             )
 
         w_n1 = df.Function(V)
-        if compute_times:
-            start_assemble = time.time()
-        A = df.assemble(a)
-        if compute_times:
-            end_assemble = time.time()
-            assembly_time_phi_fem[i] += end_assemble - start_assemble
+
         B = df.assemble(L)
         if compute_times:
             start_solve = time.time()
@@ -255,12 +258,12 @@ for i in range(0, Iter):
         if compute_times:
             end_solve = time.time()
             solve_time_phi_fem[i] += end_solve - start_solve
-            computation_time_phi_fem[i] += (
-                end_assemble - start_assemble + end_solve - start_solve
-            )
+            computation_time_phi_fem[i] += end_solve - start_solve
         wn = w_n1
         sol += [phi * wn]
         print("(", i + 1, ",", ind, "/", len(Time) - 1, ")")
+    if compute_times:
+        computation_time_phi_fem[i] += assembly_time_phi_fem[i]
     size_matrices_phi_fem[i] = np.shape(A.array())[0]
 
     # Computation of the error
@@ -370,16 +373,17 @@ for i in range(0, Iter):
     u_n = df.Expression("0.0", degree=degV + 2, domain=mesh)
     sol = [u_n]
     a = dt ** (-1) * u * v * dx + df.inner(df.grad(u), df.grad(v)) * dx
+    uD = df.Expression("0.0", degree=degV, domain=mesh)
+    bc = df.DirichletBC(V, uD, "on_boundary")
+    if compute_times:
+        start_assemble = time.time()
+    A = df.assemble(a)
+    if compute_times:
+        end_assemble = time.time()
+        assembly_time_standard_fem[i] = end_assemble - start_assemble
     for ind in range(1, len(Time)):
-        uD = df.Expression("0.0", degree=degV, domain=mesh)
-        bc = df.DirichletBC(V, uD, "on_boundary")
         L = dt ** (-1) * u_n * v * dx + f_expr[ind] * v * dx
         u_n1 = df.Function(V)
-        if compute_times:
-            start_assemble = time.time()
-        A = df.assemble(a)
-        if compute_times:
-            end_assemble = time.time()
         B = df.assemble(L)
         bc.apply(A)
         bc.apply(B)
@@ -388,16 +392,14 @@ for i in range(0, Iter):
         df.solve(A, u_n1.vector(), B)
         if compute_times:
             end_solve = time.time()
-            assembly_time_standard_fem[i] += end_assemble - start_assemble
             solve_time_standard_fem[i] += end_solve - start_solve
-            computation_time_standard_fem[i] += (
-                end_assemble - start_assemble + end_solve - start_solve
-            )
+            computation_time_standard_fem[i] += end_solve - start_solve
         sol = sol + [u_n1]
         u_n = u_n1
         print("(", i + 1, ",", ind, "/", len(Time) - 1, ")")
     size_matrices_standard_fem[i] = np.shape(A.array())[0]
-
+    if compute_times:
+        computation_time_standard_fem[i] += assembly_time_standard_fem[i]
     # Computation of the error
     norm_L2_exact = 0.0
     err_L2 = 0.0

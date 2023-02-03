@@ -11,6 +11,7 @@ df.parameters["ghost_mode"] = "shared_facet"
 df.parameters["form_compiler"]["cpp_optimize"] = True
 df.parameters["form_compiler"]["optimize"] = True
 df.parameters["allow_extrapolation"] = True
+df.parameters["krylov_solver"]["nonzero_initial_guess"] = True
 
 # test case :
 # 1) L2H1 error , P^1
@@ -227,6 +228,13 @@ for i in range(0, Iter):
                 df.div(df.grad(phi * v)),
             ) * dx(1)
 
+        if compute_times:
+            start_assemble = time.time()
+        A = df.assemble(a)
+        if compute_times:
+            end_assemble = time.time()
+            assembly_time_phi_fem[i] = end_assemble - start_assemble
+
         for ind in range(1, len(Time)):
             L = (
                 f_expr[ind] * phi * v * dx
@@ -247,12 +255,6 @@ for i in range(0, Iter):
                 )
 
             w_n1 = df.Function(V)
-            if compute_times:
-                start_assemble = time.time()
-            A = df.assemble(a)
-            if compute_times:
-                end_assemble = time.time()
-                assembly_time_phi_fem[i] += end_assemble - start_assemble
             B = df.assemble(L)
             if compute_times:
                 start_solve = time.time()
@@ -260,13 +262,12 @@ for i in range(0, Iter):
             if compute_times:
                 end_solve = time.time()
                 solve_time_phi_fem[i] += end_solve - start_solve
-                computation_time_phi_fem[i] += (
-                    end_assemble - start_assemble + end_solve - start_solve
-                )
+                computation_time_phi_fem[i] += end_solve - start_solve
             wn = w_n1
             sol += [phi * wn]
             print("(", i + 1, ",", ind, "/", len(Time) - 1, ")")
         size_matrices_phi_fem[i] = np.shape(A.array())[0]
+        computation_time_phi_fem[i] += assembly_time_phi_fem[i]
 
         # Computation of the error
         norm_L2_exact = 0.0

@@ -15,6 +15,7 @@ df.parameters["ghost_mode"] = "shared_facet"
 df.parameters["form_compiler"]["cpp_optimize"] = True
 df.parameters["form_compiler"]["optimize"] = True
 df.parameters["allow_extrapolation"] = True
+df.parameters["krylov_solver"]["nonzero_initial_guess"] = True
 
 # test case :
 # 1) L2H1 error , P^1
