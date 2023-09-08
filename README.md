@@ -1,5 +1,8 @@
 # $\phi$-FEM for the heat equation
 
+Repository containing the codes used in [preprint](https://hal.science/hal-03685445/document).  
+Authors : Michel Duprez, Vanessa Lleras, Alexei Lozinski and Killian Vuillemot. 
+
 ## Python codes 
 
   Implementations of $\phi$-FEM and standard FEM to solve the Heat equation in different case :
@@ -40,4 +43,3 @@ pip install pygalmesh
 ```
 
 
-Authors : Michel Duprez, Vanessa Lleras, Alexei Lozinski and Killian Vuillemot. 
