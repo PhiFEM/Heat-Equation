@@ -18,7 +18,7 @@ Authors : Michel Duprez, Vanessa Lleras, Alexei Lozinski and Killian Vuillemot.
     - `plot_meshes` : code to plot the popcorn domain, an example of mesh used for $\phi$-FEM and an example of conforming mesh used for standard FEM.
 
 Required packages : *FEniCS*, *matplotlib*, *numpy*, *sympy*, *vedo* and *pygalmesh*. 
-You can run \[[FEniCS](https://fenicsproject.org/)] using a Docker container with the command
+You can run [FEniCS](https://fenicsproject.org/) using a Docker container with the command
 
 ```bash
 docker run -ti -p 127.0.0.1:8000:8000 -v $(pwd):/home/fenics/shared -w /home/fenics/shared quay.io/fenicsproject/stable:current
