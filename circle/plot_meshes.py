@@ -1,9 +1,7 @@
 import dolfin as df
-import numpy as np
-import sympy
 import vedo
 import vedo.dolfin as vdf
-from vedo.shapes import Circle, Disc
+from vedo.shapes import Disc
 import mshr
 import os
 

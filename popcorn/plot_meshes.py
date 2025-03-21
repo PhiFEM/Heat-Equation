@@ -1,5 +1,4 @@
 import dolfin as df
-import mshr
 import pygalmesh
 import vedo
 import vedo.dolfin as vdf
@@ -80,8 +79,7 @@ for name in filenames:
         mesh = df.Mesh("./meshes/popcorn_exact_domain.xml")
         vdf.plot(mesh, lw=0, axes=0, c="gray")
         vedo.screenshot("./images/domain.png")
-        vedo.close()
-
+        # vedo.close()
     elif name == "phi_fem":
 
         class phi_expr(df.UserExpression):
@@ -172,7 +170,7 @@ for name in filenames:
         mesh = df.SubMesh(mesh_macro, domains, 1)
         vdf.plot(mesh, axes=0, c="yellow")
         vedo.screenshot("./images/phi_fem_mesh.png")
-        vedo.close()
+        # vedo.close()
 
     elif name == "standard":
 
@@ -234,4 +232,4 @@ for name in filenames:
         mesh = df.Mesh("./meshes/popcorn_plot_standard.xml")
         vdf.plot(mesh, axes=0, c="yellow")
         vedo.screenshot("./images/standard_mesh.png")
-        vedo.close()
+        # vedo.close()
