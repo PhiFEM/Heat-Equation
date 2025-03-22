@@ -31,7 +31,7 @@ formula = vedo.Latex(Omega, c="k", s=0.3, usetex=False, res=60).pos(
 )
 vedo.show(circle, circle_inside, formula)
 vedo.screenshot("outputs/domain.png")
-vedo.close()
+# vedo.close()
 
 i = 1
 print("\n")
@@ -59,7 +59,7 @@ mesh = df.SubMesh(mesh_macro, domains, 1)
 vdf.plot(mesh, c="yellow", interactive=False, axes=0)
 vdf.plot(circle, c="black", interactive=True, add=True, axes=0)
 vedo.screenshot("outputs/phi_fem_mesh.png")
-vedo.close()
+# vedo.close()
 
 
 print("\n")
@@ -83,4 +83,4 @@ pyg_mesh.write(f"./data/meshes/circle_{str(i).zfill(2)}.xml")
 mesh = df.Mesh(f"./data/meshes/circle_{str(i).zfill(2)}.xml")
 vdf.plot(mesh, c="yellow", interactive=True, axes=0)
 vedo.screenshot("outputs/standard_mesh.png")
-vedo.close()
+# vedo.close()
