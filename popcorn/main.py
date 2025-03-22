@@ -25,7 +25,7 @@ if test_case == 1:
     # Number of iterations
     Iter = 5
     degV = 1
-    exact_mesh_size = 0.013
+    exact_mesh_size = 0.1
 elif test_case == 2:
     # expected slope 2
     # puissance on dt

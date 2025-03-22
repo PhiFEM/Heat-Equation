@@ -3,8 +3,13 @@ import numpy as np
 import sympy
 import time
 import matplotlib.pyplot as plt
-import mshr
+import pygalmesh
 import os
+
+if not os.path.exists("./data"):
+    os.makedirs("./data")
+if not os.path.exists("./data/meshes"):
+    os.makedirs("./data/meshes")
 
 plt.style.use("ggplot")
 
@@ -321,7 +326,7 @@ if compute_times:
     solve_time_standard_fem = np.zeros(Iter)
     assembly_time_standard_fem = np.zeros(Iter)
 
-domain_mesh = mshr.Circle(df.Point(0.0, 0.0), 1.0)  # creation of the domain
+
 for i in range(0, Iter):
     print("###########################")
     text = " Iteration standard " + str(i + 1) + " "
@@ -330,7 +335,18 @@ for i in range(0, Iter):
 
     # Construction of the mesh
     N = int(8 * 2 ** (i - 1))
-    mesh = mshr.generate_mesh(domain_mesh, N)
+    points = np.array(
+        [
+            [np.cos(alpha), np.sin(alpha)]
+            for alpha in np.linspace(0.0, 2 * np.pi, N, endpoint=False)
+        ]
+    )
+    constraints = [[k, k + 1] for k in range(N - 1)] + [[N - 1, 0]]
+
+    max_edge_size = 2. * np.pi / (3. * N)
+    pyg_mesh = pygalmesh.generate_2d(points, constraints, max_edge_size=max_edge_size, num_lloyd_steps=10)
+    pyg_mesh.write(f"./data/meshes/circle_{str(i).zfill(2)}.xml")
+    mesh = df.Mesh(f"./data/meshes/circle_{str(i).zfill(2)}.xml")
     dt = mesh.hmax() ** exp_dt
     Time = np.arange(0, T, dt)
     V = df.FunctionSpace(mesh, "CG", degV)

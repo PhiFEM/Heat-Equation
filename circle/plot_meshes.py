@@ -2,7 +2,8 @@ import dolfin as df
 import vedo
 import vedo.dolfin as vdf
 from vedo.shapes import Disc
-import mshr
+import numpy as np
+import pygalmesh
 import os
 
 df.parameters["allow_extrapolation"] = True
@@ -61,7 +62,6 @@ vedo.screenshot("outputs/phi_fem_mesh.png")
 vedo.close()
 
 
-domain_mesh = mshr.Circle(df.Point(0.0, 0.0), 1.0)  # creation of the domain
 print("\n")
 print("###########################")
 text = " Mesh Standard FEM "
@@ -69,7 +69,18 @@ print(f"{text:#^27}")
 print("###########################")
 # Construction of the mesh
 N = int(8 * 2 ** (i - 1))
-mesh = mshr.generate_mesh(domain_mesh, N)
+points = np.array(
+    [
+        [np.cos(alpha), np.sin(alpha)]
+        for alpha in np.linspace(0.0, 2 * np.pi, N, endpoint=False)
+    ]
+)
+constraints = [[k, k + 1] for k in range(N - 1)] + [[N - 1, 0]]
+
+max_edge_size = 2. * np.pi / (3. * N)
+pyg_mesh = pygalmesh.generate_2d(points, constraints, max_edge_size=max_edge_size, num_lloyd_steps=10)
+pyg_mesh.write(f"./data/meshes/circle_{str(i).zfill(2)}.xml")
+mesh = df.Mesh(f"./data/meshes/circle_{str(i).zfill(2)}.xml")
 vdf.plot(mesh, c="yellow", interactive=True, axes=0)
 vedo.screenshot("outputs/standard_mesh.png")
 vedo.close()
