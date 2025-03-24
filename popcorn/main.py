@@ -1,11 +1,7 @@
 import dolfin as df
 import numpy as np
 import matplotlib.pyplot as plt
-import mshr
-import time
 import sympy
-import vedo
-import vedo.dolfin as vdf
 import pygalmesh
 import os
 
@@ -29,7 +25,7 @@ if test_case == 1:
     # Number of iterations
     Iter = 5
     degV = 1
-    exact_mesh_size = 0.013
+    exact_mesh_size = 0.1
 elif test_case == 2:
     # expected slope 2
     # puissance on dt
@@ -188,7 +184,7 @@ if not os.path.exists(f"./data/meshes/popcorn_exact_{exact_mesh_size}.xml"):
     mesh.write(f"./data/meshes/popcorn_exact_{exact_mesh_size}.xml")
 mesh_exact = df.Mesh(f"./data/meshes/popcorn_exact_{exact_mesh_size}.xml")
 
-print(f"{mesh_exact.hmax()=}")
+print(f"{mesh_exact.hmax()}")
 
 V_exact = df.FunctionSpace(mesh_exact, "CG", degV)
 # Computation of the source term
@@ -289,8 +285,8 @@ for i in range(0, Iter):
 
     # Construction of the mesh
     dt = dt_exact * (2 ** (Iter - i))
-    print(f"{dt_exact=}")
-    print(f"{dt=}")
+    print(f"{dt_exact}")
+    print(f"{dt}")
     Time = np.arange(0, T, dt)
 
     hmax = 1.0e4
@@ -304,7 +300,7 @@ for i in range(0, Iter):
         )
         size += 1
         hmax = mesh_macro.hmax()
-    print(f"{hmax**exp_dt=}    {size=}     {dt=}")
+    print(f"{hmax**exp_dt}    {size}     {dt}")
 
     V_phi = df.FunctionSpace(mesh_macro, "CG", degPhi)
     phi = phi_expr(element=V_phi.ufl_element())
@@ -501,7 +497,7 @@ for i in range(0, Iter):
             err_L2 = err_L2_j
         norm_H1_exact += df.assemble(dt * df.grad(sol_exactj) ** 2 * dx_exact)
         err_H1 += df.assemble(dt * df.grad(Iu_hj - sol_exactj) ** 2 * dx_exact)
-        print(f"Time : {j=}   {Time_exact[2**(Iter-i)*j]=}   {Time[j]=}")
+        print(f"Time : {j}   {Time_exact[2**(Iter-i)*j]}   {Time[j]}")
 
     err_L2 = err_L2**0.5 / norm_L2_exact**0.5
     err_H1 = err_H1**0.5 / norm_H1_exact**0.5
@@ -532,8 +528,8 @@ for i in range(0, Iter):
     print("###########################")
 
     dt = dt_exact * (2 ** (Iter - i))
-    print(f"{dt_exact=}")
-    print(f"{dt=}")
+    print(f"{dt_exact}")
+    print(f"{dt}")
     Time = np.arange(0, T, dt)
     # Construction of the mesh
     hmax = 1.0e4
@@ -554,7 +550,7 @@ for i in range(0, Iter):
         mesh = df.Mesh(f"./data/meshes/popcorn_{exact_mesh_size}_iter_{i}.xml")
         hmax = mesh.hmax()
 
-    print(f"{hmax**exp_dt=}    {size=}     {dt=}")
+    print(f"{hmax**exp_dt}    {size}     {dt}")
 
     V = df.FunctionSpace(mesh, "CG", degV)
 
@@ -647,7 +643,7 @@ for i in range(0, Iter):
             err_L2 = err_L2_j
         norm_H1_exact += df.assemble(dt * df.grad(sol_exactj) ** 2 * dx_exact)
         err_H1 += df.assemble(dt * df.grad(Iu_hj - sol_exactj) ** 2 * dx_exact)
-        print(f"Time : {j=}   {Time_exact[2**(Iter-i)*j]=}   {Time[j]=}")
+        print(f"Time : {j}   {Time_exact[2**(Iter-i)*j]}   {Time[j]}")
     err_L2 = err_L2**0.5 / norm_L2_exact**0.5
     err_H1 = err_H1**0.5 / norm_H1_exact**0.5
     size_mesh_standard_vec[i] = mesh.hmax()
