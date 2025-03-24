@@ -27,7 +27,7 @@ It contains also the following python libraries and their dependencies:
    
    ```bash
    mkdir heat-equation-phifem/
-   git clone https://github.com/PhiFEM/Heat-Equation.git heat-equation-phifem
+   git clone https://github.com/PhiFEM/publication_Heat-Equation_fenics.git heat-equation-phifem
    ```
 
 2) Download the image from the docker.io registry, in the main directory:
