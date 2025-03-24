@@ -1,7 +1,6 @@
 # $\varphi$-FEM for the heat equation
 
-This repository contains the code used in 
-Repository containing the codes used in [Duprez, Michel, and Lleras, Vanessa, and Lozinski, Alexei, and Vuillemot, Killian. *$\varphi$-FEM for the heat equation: optimal convergence on unfitted meshes in space* (preprint)](https://arxiv.org/abs/2303.12013).  
+This repository contains the code used in [Duprez, Michel, and Lleras, Vanessa, and Lozinski, Alexei, and Vuillemot, Killian. *$\varphi$-FEM for the heat equation: optimal convergence on unfitted meshes in space* (preprint)](https://arxiv.org/abs/2303.12013).  
 
 ## This repository is for reproducibility purposes only
 
